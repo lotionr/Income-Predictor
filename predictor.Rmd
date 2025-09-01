@@ -1,0 +1,333 @@
+---
+title: "Final Project"
+output:
+  html_document:
+    df_print: paged
+---
+
+First must change into correct working directory, and download data
+```{r}
+# setting directory
+setwd("C:/Users/lochr/Downloads/Final Project Data Science in R/")
+getwd()
+
+# downloading data and taking a first look
+adult <- read.csv("adult_sal (1).csv")
+head(adult)
+```
+
+After running the head function, I noticed there were two columns with the same information, the index value. So I deleted one.
+
+```{r}
+library(dplyr)
+
+# kept index deleted X
+adult <- select(adult, -X)
+
+# further looking at data
+str(adult)
+summary(adult)
+```
+
+After running str and summary, I noticed that there were some columns with a lot of factor levels. Since too many factor levels is not good for a logistic model, I needed to combine some to reduce the total amount.
+
+Feature Engineering the Factor Levels (Data Cleaning and Preprocessing)
+
+```{r}
+table(adult$type_employer)
+
+# I am going to combine the 'never worked' and 'without pay'
+# employer types into a new employer type called 'Unemployed'
+
+unemp <- function(job)
+{
+  job <- as.character(job)
+  if (job == 'Never-worked' | job == 'Without-pay')
+  {
+    return('Unemployed')
+  }
+  else 
+  {
+    return(job)
+  }
+}
+
+
+adult$type_employer <- sapply(adult$type_employer, unemp)
+table(adult$type_employer)
+```
+
+I will now be doing a similar process as above for a couple more employer type factor levels.
+
+I will be combining 'Self-emp-inc' and 'Self-emp-not-inc' into just 'Self-emp'.
+
+I will also be combining 'State-gov' and 'Local-gov' into just 'SL-gov'.
+
+```{r}
+group_emp <- function(job)
+{
+  if (job == 'Local-gov' | job == 'State-gov')
+  {
+    return('SL-gov')
+  }
+  else if (job == 'Self-emp-inc' | job == 'Self-emp-not-inc')
+  {
+    return('Self-emp')
+  }
+  else
+  {
+    return(job)
+  }
+}
+
+adult$type_employer <- sapply(adult$type_employer, group_emp)
+table(adult$type_employer)
+```
+
+Doing the same process yet again, but this time with the marital status column. There were too many factor levels so I wanted to reduce it to just 3: Married, Not Married, and Never Married.
+
+```{r}
+group_marital <- function(mar)
+{
+  mar <- as.character(mar)
+  if (mar == 'Separated' | mar == 'Divorced' | mar == 'Widowed')
+  {
+    return('Not-Married')
+  }
+  else if (mar == 'Never-married')
+  {
+    return(mar)
+  }
+  else
+  {
+    return('Married')
+  }
+}
+
+
+adult$marital <- sapply(adult$marital, group_marital)
+table(adult$marital)
+```
+
+I also wanted to group the factor levels in the country column, because there were 40+ counties which would confuse the model.
+
+I decided to group the countries roughly by continent.
+
+```{r}
+Asia <- c('Thailand', 'India', 'Laos', 'Vietnam', 'Taiwan', 'Hong', 'China', 'Philippines', 'Cambodia', 'Iran', 'Japan')
+
+NorAm <- c('Puerto-Rico', 'Canada', 'United-States')
+
+Europe <- c('France', 'Greece', 'Yugoslavia', 'Holand-Netherlands', 'Hungary', 'Ireland', 'Italy', 'Poland', 'England', 'Portugal', 'Scotland', 'Germany')
+
+LatSouthAm <- c('Jamaica', 'Outlying-US(Guam-USVI-etc)', 'Haiti', 'Ecuador', 'Cuba', 'Columbia', 'El-Salvador', 'Honduras', 'Peru', 'Trinadad&Tobago', 'Mexico', 'Guatemala', 'Dominican-Republic', 'Nicaragua')
+
+Other <- c('South')
+
+
+group_country <- function(country)
+{
+  if (country %in% Asia)
+  {
+    return('Asia')
+  }
+  else if (country %in% NorAm)
+  {
+    return('North America')
+  }
+  else if (country %in% Europe)
+  {
+    return('Europe')
+  }
+  else if (country %in% LatSouthAm)
+  {
+    return('Latin and South America')
+  }
+  else
+  {
+    return('Other')
+  }
+}
+
+
+adult$country <- sapply(adult$country, group_country)
+table(adult$country)
+
+# renaming country column to region so it fits better
+adult <- rename(adult, region = country)
+head(adult)
+```
+
+Doing the same process for education.
+
+```{r}
+table(adult$education)
+grade_school <- c("11th", "Preschool", "12th", "9th", "5th-6th", "10th", "1st-4th", "7th-8th")
+associate <- c("Assoc-acdm", "Assoc-voc")
+group_education <- function(ed)
+{
+  ed <- as.character(ed)
+  if (ed %in% grade_school)
+  {
+    return('Below-HS')
+  }
+  else if (ed %in% associate)
+  {
+    return('Associate')
+  }
+  else
+  {
+    return(ed)
+  }
+}
+
+adult$education <- sapply(adult$education, group_education)
+table(adult$education)
+```
+
+
+In order for the model to work, all of the data columns in characters needed to be converted to factors, so I converted them.
+
+```{r}
+str(adult)
+
+
+adult$type_employer <- sapply(adult$type_employer, factor)
+adult$education <- sapply(adult$education, factor)
+adult$marital <- sapply(adult$marital, factor)
+adult$occupation <- sapply(adult$occupation, factor)
+adult$relationship <- sapply(adult$relationship, factor)
+adult$race <- sapply(adult$race, factor)
+adult$sex <- sapply(adult$sex, factor)
+adult$region <- sapply(adult$region, factor)
+adult$income <- sapply(adult$income, factor)
+
+str(adult)
+```
+
+Now I will continue cleaning up the data by handling missing data.
+
+First I changed the missing data to NA
+
+```{r}
+# replacing ? with NA
+adult[adult == '?'] <- NA
+table(adult$type_employer)
+
+# I realized I had to re-factor everything because I changed the '?'
+# to 'NA' :(
+adult$type_employer <- sapply(adult$type_employer, factor)
+adult$education <- sapply(adult$education, factor)
+adult$marital <- sapply(adult$marital, factor)
+adult$occupation <- sapply(adult$occupation, factor)
+adult$relationship <- sapply(adult$relationship, factor)
+adult$race <- sapply(adult$race, factor)
+adult$sex <- sapply(adult$sex, factor)
+adult$region <- sapply(adult$region, factor)
+adult$income <- sapply(adult$income, factor)
+
+
+# Testing to see if it works
+table(adult$type_employer)
+```
+
+Further cleanup using Amelia (helps create missing maps)
+
+Now I actually removed the missing data.
+
+```{r}
+# using Amelia library to create a visual representation of the missing data
+install.packages("Amelia")
+library(Amelia)
+
+missmap(adult)
+
+# the missing map was hard to read and ugly so I made a better one
+missmap(adult, y.at = c(1), y.labels = c(''), col = c('red', 'black'))
+
+
+# because the missing data is a very small portion of the overall data set
+# I decided to just remove it
+adult <- na.omit(adult)
+
+
+# checking to see if it works
+missmap(adult, y.at = c(1), y.labels = c(''), col = c('red', 'black'))
+# it did
+```
+
+Now I will actually be graphing the data.
+
+Exploratory Data Analysis (EDA)
+
+```{r}
+library(ggplot2)
+
+# income in relation to age
+ggplot(adult, aes(age, fill = income)) + geom_histogram(color = 'white', binwidth = 1) + ggtitle("Income By Age") + xlab("Age") + ylab("Frequency") + theme(plot.title = element_text(hjust = 0.5))
+
+# using a density plot instead of histogram for above relationship
+ggplot(adult, aes(x = age, fill = income)) + geom_density(alpha = 0.6) + ggtitle("Income By Age") + xlab("Age") + ylab("Frequency") + theme(plot.title = element_text(hjust = 0.5))
+
+# how many people work how many hours per week
+ggplot(adult, aes(hr_per_week)) +geom_histogram() + theme_bw()
+
+# income based on region
+ggplot(adult, aes(region)) + geom_bar(aes(fill = income), color = 'white') + ggtitle("Income By Region") + xlab("Region") + ylab("Frequency") + theme(plot.title = element_text(hjust = 0.5))
+# census seems to have taken majority of data from U.S., important to 
+# keep in mind
+
+# income based on employer type
+ggplot(adult, aes(type_employer)) + geom_bar(aes(fill = income), color = 'white') + ggtitle("Income By Type of Employer") + xlab("Type of Employer") + ylab("Frequency") + theme(plot.title = element_text(hjust = 0.5))
+
+# income based on education
+ggplot(adult, aes(education)) + geom_bar(aes(fill = income), color = 'white') + ggtitle("Income By Education Level") + xlab("Education Level") + ylab("Frequency") + theme(plot.title = element_text(hjust = 0.5))
+
+# income based on education_num
+ggplot(adult, aes(education_num, fill = income)) + geom_histogram(color = 'white', binwidth = 1) + ggtitle("Income By Education") + xlab("Education") + ylab("Frequency") + theme(plot.title = element_text(hjust = 0.5))
+
+
+# the graphs were useful in providing insight into the relationship between
+# the columns, mostly data behaves as expected
+```
+
+Finally, I am going to actually start building the model
+
+I am predicting if someone earns above 50k or below 50k based on certain factors.
+
+Therefore, since there are only two possible outcomes, I decided to use logistic regression since is it a binary classification model.
+
+```{r}
+# creating train test split
+train_set <- sample(1 : nrow(adult), nrow(adult) * 0.7) 
+train_data <- adult[train_set, ]
+test_data <- adult[- train_set, ]
+
+# training model (using all the columns as predictors initially)
+model <- glm(income ~ . , family = binomial(logit), data = train_data)
+summary(model)
+
+# instead of using all the columns to predict income, I used the step
+# function to weed out columns that aren't statistically significant
+# in order to help tune the model
+newModel <- step(model)
+summary(newModel)
+# because a lot of the columns were statistically significant, step
+# didn't really do a lot
+
+
+# will now be creating confusion matrix
+test_data$predicted.income <- predict(newModel, newdata = test_data, type = 'response')
+table(test_data$income, test_data$predicted.income > 0.5)
+
+# model evaluation and interpretation
+acc <- (6440 + 1378) / (6440 + 1378 + 505 + 893)
+acc
+recall <- (6440) / (6440 + 505)
+recall
+precision <- 6440 / (6440 + 893)
+precision
+f1 <- 2 * (precision * recall) / (precision + recall)
+f1
+```
+
