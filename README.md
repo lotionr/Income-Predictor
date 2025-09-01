@@ -100,8 +100,4 @@ From one run (your results may vary):
 3. Run the code chunks in order (or source the script)  
 4. View plots and metrics  
 
----
-
-## 📄 License
-
-MIT (or whichever you choose).  
+---  
