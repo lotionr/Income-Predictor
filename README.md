@@ -4,7 +4,7 @@ This project predicts whether an individual earns more than **$50k per year** ba
 
 ---
 
-## 📦 Requirements
+## Requirements
 
 - **R (≥ 4.0)**
 - R packages:
@@ -20,14 +20,14 @@ install.packages(c("dplyr", "ggplot2", "Amelia"))
 
 ---
 
-## 📂 Dataset
+## Dataset
 
 - Place the CSV file (e.g., `adult_sal.csv`) in your working directory.
 - Original file sometimes downloads as `adult_sal (1).csv` — rename for consistency.
 
 ---
 
-## 🛠 Workflow
+## Workflow
 
 ### 1. Setup & Data Import
 - Set working directory
@@ -74,7 +74,7 @@ Created plots with **ggplot2** to visualize:
 
 ---
 
-## 📊 Example Results
+## Example Results
 
 From one run (your results may vary):
 
@@ -85,7 +85,7 @@ From one run (your results may vary):
 
 ---
 
-## ✅ Notes
+## Notes
 
 - The dataset is slightly imbalanced toward `<=50K`, so ROC/PR analysis or resampling may improve results.
 - Stepwise regression (`step()`) is heuristic; for more robust results, consider regularization (`glmnet`) or tree-based methods.
@@ -93,7 +93,7 @@ From one run (your results may vary):
 
 ---
 
-## 📌 How to Run
+## How to Run
 
 1. Clone/download this repo  
 2. Open R/RStudio in project directory  
