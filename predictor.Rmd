@@ -1,5 +1,5 @@
 ---
-title: "Final Project"
+title: "Income Predictor"
 output:
   html_document:
     df_print: paged
@@ -8,7 +8,7 @@ output:
 First must change into correct working directory, and download data
 ```{r}
 # setting directory
-setwd("C:/Users/lochr/Downloads/Final Project Data Science in R/")
+setwd("./adult_sal.csv")
 getwd()
 
 # downloading data and taking a first look
